@@ -283,11 +283,78 @@ In the `urls.py` file
 
 ```py
 urlpatterns = [
-    # ex: /polls/
     path("", views.index, name="index"),
     path("<int:question_id>/", views.detail, name="detail"),
     path("<int:question_id>/results/", views.results, name="results"),
     path("<int:question_id>/vote/", views.vote, name="vote"),
 ]
 ```
+
+2. Write views that actually do something
+
+Each view is responsible for doing one of two things: returning an HttpResponse object containing the content for the requested page, or raising an exception such as Http404. The rest is up to you.
+
+In the views.py file:
+
+```py
+def index(request):
+    latest_question_list = Question.objects.order_by("-pub_date")[:5]
+    output = ", ".join([q.question_text for q in latest_question_list])
+    return HttpResponse(output)
+```
+
+There’s a problem here, though: the page’s design is hard-coded in the view.
+
+Create a directory called `templates` in the `polls` directory. Django will look for templates in there.
+
+Within the `templates` directory we have just created, create another directory called `polls`, and within that create a file called `index.html`.
+
+```html
+{% if latest_question_list %}
+    <ul>
+    {% for question in latest_question_list %}
+        <li><a href="/polls/{{ question.id }}/">{{ question.question_text }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No polls are available.</p>
+{% endif %}
+```
+
+update `views.py` file:
+
+```py
+def index(request):
+    latest_question_list = Question.objects.order_by("-pub_date")[:5]
+    template = loader.get_template("polls/index.html")
+    context = {
+        "latest_question_list": latest_question_list,
+    }
+    return HttpResponse(template.render(context, request))
+```
+
+3. Raising a 404 error
+
+Now, if we cannot find the question ID stored in the DB, we should return HTTP status error code to the user.
+
+```py
+def detail(request, question_id):
+    try:
+        question = Question.objects.get(pk=question_id)
+
+    except Question.DoesNotExist as exc:
+        raise Http404("Question does not exist") from exc
+
+    template = loader.get_template("polls/detail.html")
+    context = {"question": question}
+
+    return HttpResponse(template.render(context, request))
+```
+
+Add `polls/detail.html`
+
+```html
+{{ question }}
+```
+
 
