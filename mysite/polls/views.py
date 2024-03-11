@@ -16,8 +16,16 @@ def index(request):
 
 
 def detail(request, question_id):
-    response = f"You are looking at the question {question_id}."
-    return HttpResponse(response)
+    try:
+        question = Question.objects.get(pk=question_id)
+
+    except Question.DoesNotExist as exc:
+        raise Http404("Question does not exist") from exc
+
+    template = loader.get_template("polls/detail.html")
+    context = {"question": question}
+
+    return HttpResponse(template.render(context, request))
 
 
 def results(request, question_id):
