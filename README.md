@@ -121,7 +121,7 @@ sqlite> .tables
 - Choice
  - the text of the choice and a vote tally. Each Choice is associated with a Question
 
-In the models.py file
+In the `models.py` file
 
 ```py
 class Question(models.Model):
@@ -136,3 +136,107 @@ class Choice(models.Model):
 
 ```
 
+The model code gives Django a lot of information. With it, Django is able to:
+
+- Create a database schema (CREATE TABLE statements) for this app.
+- Create a Python database-access API for accessing Question and Choice objects.
+
+3. Activate the models
+
+To include the app in our project, we need to add a reference to its configuration class in the INSTALLED_APPS setting.
+
+- Django apps are “pluggable”: You can use an app in multiple projects, and you can distribute apps, because they don’t have to be tied to a given Django installation.
+
+In the settings.py file
+
+```py
+INSTALLED_APPS = [
+    "polls.apps.PollsConfig",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+]
+```
+
+```bash
+$ python manage.py makemigrations polls
+```
+
+By running makemigrations, you’re telling Django that you’ve made some changes to your models (in this case, you’ve made new ones) and that you’d like the changes to be stored as a migration.
+
+```bash
+$ python manage.py sqlmigrate polls 0001
+```
+
+The sqlmigrate command takes migration names and returns their SQL. The sqlmigrate command doesn’t actually run the migration on your database
+
+Run migrate again to create those model tables in your database:
+
+```bash
+$ python manage.py migrate
+```
+
+4. Use __str__() methods to return the helpful message
+
+```py
+def __str__(self):
+    return self.question_text
+```
+
+5. Use `python manage.py shell` to manipulate the free API.
+
+```bash
+>>> from polls.models import Choice, Question
+
+>>> Question.objects.all()
+<QuerySet [<Question: What's up?>]>
+
+>>> Question.objects.filter(id=1)
+<QuerySet [<Question: What's up?>]>
+
+>>> Question.objects.filter(question_text__startswith="What")
+<QuerySet [<Question: What's up?>]>
+
+>>> from django.utils import timezone
+>>> current_year = timezone.now().year
+>>> Question.objects.get(pub_date__year=current_year)
+<Question: What's up?>
+
+>>> Question.objects.get(id=2)
+Traceback (most recent call last):
+    ...
+DoesNotExist: Question matching query does not exist.
+
+# The following is identical to Question.objects.get(id=1).
+>>> Question.objects.get(pk=1)
+<Question: What's up?>
+
+>>> q = Question.objects.get(pk=1)
+>>> q.was_published_recently()
+True
+
+>>> q = Question.objects.get(pk=1)
+
+>>> q.choice_set.all()
+<QuerySet []>
+
+>>> q.choice_set.create(choice_text="Not much", votes=0)
+>>> q.choice_set.create(choice_text="The sky", votes=0)
+>>> c = q.choice_set.create(choice_text="Just hacking again", votes=0)
+
+>>> c.question
+<Question: What's up?>
+
+>>> q.choice_set.all()
+<QuerySet [<Choice: Not much>, <Choice: The sky>, <Choice: Just hacking again>]>
+>>> q.choice_set.count()
+3
+
+>>> Choice.objects.filter(question__pub_date__year=current_year)
+<QuerySet [<Choice: Not much>, <Choice: The sky>, <Choice: Just hacking again>]>
+
+>>> c.delete()
+```
