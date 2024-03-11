@@ -354,7 +354,50 @@ def detail(request, question_id):
 Add `polls/detail.html`
 
 ```html
-{{ question }}
+<h1>{{ question.question_text }}</h1>
+<ul>
+{% for choice in question.choice_set.all %}
+    <li>{{ choice.choice_text }}</li>
+{% endfor %}
+</ul>
 ```
 
+4. Removing hardcoded URLs in templates
+
+- The problem with this hardcoded, tightly-coupled approach is that it becomes challenging to change URLs on projects with a lot of templates
+
+```html
+<li><a href="/polls/{{ question.id }}/">{{ question.question_text }}</a></li>
+```
+
+change to:
+
+```html
+<li><a href="{% url 'detail' question.id %}">{{ question.question_text }}</a></li>
+```
+
+so that we can change the URL of the polls detail view to something else
+
+
+5. Namespacing URL names
+
+How does one make it so that Django knows which app view to create for a url when using the {% url %} template tag?
+
+- add an app_name to set the application namespace in `urls.py` file
+
+```py
+app_name = "polls"
+```
+
+Now change the `polls/index.html` template from:
+
+```html
+<li><a href="{% url 'detail' question.id %}">{{ question.question_text }}</a></li>
+```
+
+to point at the namespaced detail view:
+
+```html
+<li><a href="{% url 'polls:detail' question.id %}">{{ question.question_text }}</a></li>
+```
 
