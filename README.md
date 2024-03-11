@@ -473,7 +473,7 @@ def vote(request, question_id):
 <a href="{% url 'polls:detail' question.id %}">Vote again?</a>
 ```
 
-## Use generic views: Less code is better
+## Use generic views
 
 The detail() and results() views are very short – and, as mentioned above, redundant. The index() view, which displays a list of polls, is similar. \
 
@@ -529,3 +529,51 @@ Similarly, the `ListView` generic view uses a default template called <app name>
 
 In previous parts of the tutorial, the templates have been provided with a context that contains the question and `latest_question_list` context variables. For `DetailView` the question variable is provided automatically – since we’re using a Django model (Question), Django is able to determine an appropriate name for the context variable. However, for `ListView`, the automatically generated context variable is `question_list`. To override this we provide the `context_object_name` attribute, specifying that we want to use `latest_question_list` instead. As an alternative approach, you could change your templates to match the new default context variables – but it’s a lot easier to tell Django to use the variable you want. \
 
+## Introducing automated testing
+
+1. Identify a bug
+
+Confirm the bug by using the shell to check the method on a question whose date lies in the future:
+
+```bash
+$ python manage.py shell
+```
+
+```bash
+>>> import datetime
+>>> from django.utils import timezone
+>>> from polls.models import Question
+>>> # create a Question instance with pub_date 30 days in the future
+>>> future_question = Question(pub_date=timezone.now() + datetime.timedelta(days=30))
+>>> # was it published recently?
+>>> future_question.was_published_recently()
+True
+```
+
+2. Create a test in the tests.py file to expose the bug
+
+```py
+class QuestionModelTests(TestCase):
+    def test_was_published_recently_with_future_question(self):
+        """
+        was_published_recently() returns False for questions whose pub_date
+        is in the future.
+        """
+        time = timezone.now() + datetime.timedelta(days=30)
+        future_question = Question(pub_date=time)
+        self.assertIs(future_question.was_published_recently(), False)
+```
+
+3. Run the test
+
+``bash
+$ python manage.py test polls
+```
+
+4. Fix the bug
+
+```py
+def was_published_recently(self):
+    now = timezone.now()
+    return now - datetime.timedelta(days=1) <= self.pub_date <= now
+```
