@@ -188,7 +188,7 @@ def __str__(self):
 
 5. Use `python manage.py shell` to manipulate the free API.
 
-```bash
+```shell
 >>> from polls.models import Choice, Question
 
 >>> Question.objects.all()
@@ -240,3 +240,54 @@ True
 
 >>> c.delete()
 ```
+
+## Introducing the Django Admin
+
+1. Creating an admin user
+
+```bash
+$ python manage.py createsuperuser
+```
+
+Go to http://127.0.0.1:8000/admin to see the admin UI. Now, we need to make the poll app modifiable in the admin.
+
+In the polls/admin.py file:
+
+```py
+from .models import Question
+
+admin.site.register(Question)
+```
+
+## Writing more views
+
+1. Add more views for polls app
+
+In the `views.py` file
+
+```py
+def detail(request, question_id):
+    return HttpResponse("You're looking at question %s." % question_id)
+
+
+def results(request, question_id):
+    response = "You're looking at the results of question %s."
+    return HttpResponse(response % question_id)
+
+
+def vote(request, question_id):
+    return HttpResponse("You're voting on question %s." % question_id)
+```
+
+In the `urls.py` file
+
+```py
+urlpatterns = [
+    # ex: /polls/
+    path("", views.index, name="index"),
+    path("<int:question_id>/", views.detail, name="detail"),
+    path("<int:question_id>/results/", views.results, name="results"),
+    path("<int:question_id>/vote/", views.vote, name="vote"),
+]
+```
+
