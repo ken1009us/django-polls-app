@@ -566,7 +566,7 @@ class QuestionModelTests(TestCase):
 
 3. Run the test
 
-``bash
+```bash
 $ python manage.py test polls
 ```
 
@@ -576,4 +576,109 @@ $ python manage.py test polls
 def was_published_recently(self):
     now = timezone.now()
     return now - datetime.timedelta(days=1) <= self.pub_date <= now
+```
+
+## Customize the admin form
+
+By registering the `Question` model with `admin.site.register(Question)`, Django was able to construct a default form representation. Often, you’ll want to customize how the admin form looks and works. You’ll do this by telling Django the options you want when you register the object.
+
+
+1. Register the Question for the Question admin
+
+In the polls/admin.py
+
+```py
+class QuestionAdmin(admin.ModelAdmin):
+    fields = ["pub_date", "question_text"]
+
+
+admin.site.register(Question, QuestionAdmin)
+```
+
+This isn’t impressive with only two fields, but for admin forms with dozens of fields, choosing an intuitive order is an important usability detail.
+
+```py
+class QuestionAdmin(admin.ModelAdmin):
+    fieldsets = [
+        (None, {"fields": ["question_text"]}),
+        ("Date information", {"fields": ["publish_date"]}),
+    ]
+```
+
+2. Question has multiple Choices, and the admin page doesn’t display choices.
+
+Edit the Question registration code to read:
+
+```py
+class ChoiceInline(admin.TabularInline):
+    model = Choice
+    extra = 3
+
+
+class QuestionAdmin(admin.ModelAdmin):
+    fieldsets = [
+        (None, {"fields": ["question_text"]}),
+        ("Date information", {"fields": ["pub_date"], "classes": ["collapse"]}),
+    ]
+    inlines = [ChoiceInline]
+```
+
+## Customize the admin change list
+
+By default, Django displays the str() of each object. Use the list_display admin option, which is a tuple of field names to display, as columns, on the change list page for the object:
+
+```py
+class QuestionAdmin(admin.ModelAdmin):
+    # ...
+    list_display = ["question_text", "publish_date", "was_published_recently"]
+```
+
+You can improve that by using the display() decorator on that method (in polls/models.py), as follows:
+
+```py
+class Question(models.Model):
+    # ...
+    @admin.display(
+        boolean=True,
+        ordering="publish_date",
+        description="Published recently?",
+    )
+    def was_published_recently(self):
+        now = timezone.now()
+        return now - datetime.timedelta(days=1) <= self.pub_date <= now
+```
+
+## Customize the admin
+
+Open your settings file (mysite/settings.py, remember) and add a DIRS option in the TEMPLATES setting:
+
+```py
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
+]
+```
+
+Now create a directory called admin inside templates, and copy the template admin/base_site.html from within the default Django admin template directory in the source code of Django itself (django/contrib/admin/templates) into that directory. \
+
+Then, edit the file and replace {{ site_header|default:_('Django administration') }} (including the curly braces) with your own site’s name as you see fit. You should end up with a section of code like:
+
+```html
+{% block branding %}
+<div id="site-name"><a href="{% url 'admin:index' %}">Polls Administration</a></div>
+{% if user.is_anonymous %}
+  {% include "admin/color_theme_toggle.html" %}
+{% endif %}
+{% endblock %}
 ```
