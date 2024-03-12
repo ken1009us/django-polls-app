@@ -650,7 +650,7 @@ class Question(models.Model):
 
 ## Customize the admin
 
-Open your settings file (mysite/settings.py, remember) and add a DIRS option in the TEMPLATES setting:
+Open the settings file (mysite/settings.py) and add a DIRS option in the TEMPLATES setting:
 
 ```py
 TEMPLATES = [
@@ -682,3 +682,4 @@ Then, edit the file and replace {{ site_header|default:_('Django administration'
 {% endif %}
 {% endblock %}
 ```
+
