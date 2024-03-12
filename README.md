@@ -191,6 +191,17 @@ def __str__(self):
 ```shell
 >>> from polls.models import Choice, Question
 
+# No questions are in the system yet.
+>>> Question.objects.all()
+<QuerySet []>
+
+# Create a new Question.
+# Support for time zones is enabled in the default settings file, so
+# Django expects a datetime with tzinfo for pub_date. Use timezone.now()
+# instead of datetime.datetime.now() and it will do the right thing.
+>>> from django.utils import timezone
+>>> q = Question(question_text="What's new?", publish_date=timezone.now())
+
 >>> Question.objects.all()
 <QuerySet [<Question: What's up?>]>
 
@@ -683,3 +694,40 @@ Then, edit the file and replace {{ site_header|default:_('Django administration'
 {% endblock %}
 ```
 
+## Reusable App
+
+1. Move the polls directory into django-polls directory, and rename it to django_polls
+
+2. Edit django_polls/apps.py so that name refers to the new module name and add label to give a short name for the app
+
+3. Create pyproject.toml, setup.cfg, and setup.py files which detail how to build and install the app
+
+4. Only Python modules and packages are included in the package by default. To include additional files, we’ll need to create a MANIFEST.in file.
+
+5. Try building the package by running `python setup.py sdist` inside django-polls. This creates a directory called dist and builds your new package, django-polls-0.1.tar.gz.
+
+Now we completely packaged the app.
+
+1. We can install the package anywhere.
+
+```bash
+python -m pip install django-polls/dist/django-polls-0.1.tar.gz
+```
+
+2. Update mysite/settings.py to point to the new module name
+
+```py
+INSTALLED_APPS = [
+    "django_polls.apps.PollsConfig",
+    ...,
+]
+```
+
+3. Update mysite/urls.py to point to the new module name
+
+```py
+urlpatterns = [
+    path("polls/", include("django_polls.urls")),
+    ...,
+]
+```
